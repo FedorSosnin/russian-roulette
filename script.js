@@ -2,7 +2,6 @@ const deckEl = document.getElementById("deck");
 const deckTopEl = document.getElementById("deck-top");
 const cardsArea = document.getElementById("cards-area");
 const countersEl = document.getElementById("counters");
-const traitorToggleEl = document.getElementById("traitor-toggle");
 const stackCards = deckEl.querySelectorAll(".stack-card");
 const sounds = {
   draw: new Audio("Assets/Sound/playing-card-flipped-over-epic-stock-media-1-00-00.mp3"),
@@ -15,7 +14,6 @@ const cardImages = {
   click: "Assets/Cards/rr-click.jpg",
   bang: "Assets/Cards/rr-bang.jpg",
   jam: "Assets/Cards/rr-jam.jpg",
-  traitor: "Assets/Cards/rr-traitor.jpg",
   back: "Assets/Cards/rr-card-back.jpg",
 };
 
@@ -24,7 +22,6 @@ let drawnCount = 0;
 let points = 0;
 let inPlay = true;
 let tapTimeout = null;
-let traitorEnabled = true;
 let lastBang = false;
 let suppressNextTap = false;
 let topDrawnCleanup = null;
@@ -40,7 +37,7 @@ const playSound = (audio, options = {}) => {
   const { overlap = false } = options;
   const target = overlap ? audio.cloneNode(true) : audio;
   target.currentTime = 0;
-  target.play().catch(() => {});
+  target.play().catch(() => { });
 };
 
 const buildDeck = () => {
@@ -52,10 +49,8 @@ const buildDeck = () => {
     "click",
     "bang",
     "jam",
+    "jam",
   ];
-  if (traitorEnabled) {
-    newDeck.push("traitor");
-  }
   for (let i = newDeck.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
@@ -63,7 +58,7 @@ const buildDeck = () => {
   return newDeck;
 };
 
-const getTotalCards = () => (traitorEnabled ? 8 : 7);
+const getTotalCards = () => 8;
 
 const resetGame = () => {
   deck = buildDeck();
@@ -77,7 +72,6 @@ const resetGame = () => {
     topDrawnCleanup = null;
   }
   topDrawnCard = null;
-  updateDeckStack();
   renderCounters();
   const shouldIntro = !introPlayed && introReady;
   if (shouldIntro) {
@@ -86,6 +80,7 @@ const resetGame = () => {
     playSound(sounds.shuffle);
     return;
   }
+  updateDeckStack();
   if (introReady || introPlayed) {
     playSound(sounds.shuffle);
   }
@@ -136,6 +131,7 @@ const updateDeckStack = () => {
   if (deckTopEl) {
     deckTopEl.style.visibility = remaining > 0 ? "visible" : "hidden";
     deckTopEl.style.opacity = remaining > 0 ? "1" : "0";
+    deckTopEl.style.setProperty("--i", "8");
   }
   const deckPlaceholder = deckEl.querySelector(".deck-placeholder");
   if (deckPlaceholder) {
@@ -154,27 +150,49 @@ const updateDeckStack = () => {
 function playIntroStack() {
   const totalCards = getTotalCards();
   const stackCount = Math.max(0, Math.min(stackCards.length, totalCards - 1));
-  stackCards.forEach((card, index) => {
-    const visible = index < stackCount;
-    card.style.display = visible ? "block" : "none";
-    card.style.setProperty("--i", `${index + 1}`);
-  });
-  if (deckTopEl) {
-    deckTopEl.style.display = totalCards > 0 ? "block" : "none";
-  }
 
+  // Prepare stack items array first
   const stackItems = [
     ...Array.from(stackCards).slice(0, stackCount),
     deckTopEl,
   ].filter(Boolean);
-  deckEl.style.display = "grid";
-  stackItems.forEach((item, index) => {
-    item.classList.remove("stack-enter");
-    item.classList.add("stack-offscreen");
-    item.style.visibility = "visible";
-    item.style.opacity = "1";
-    item.style.transform =
+
+  // Set up ALL transforms and visibility BEFORE changing display properties
+  stackCards.forEach((card, index) => {
+    const visible = index < stackCount;
+    card.style.setProperty("--i", `${index + 1}`);
+    if (visible) {
+      card.style.visibility = "hidden";
+      card.style.opacity = "0";
+      card.classList.remove("stack-enter");
+      card.classList.add("stack-offscreen");
+      card.style.transform =
+        "translate(var(--stack-x), calc(var(--stack-y) - 120vh)) rotate(calc(var(--stack-rot) - 6deg))";
+    }
+  });
+
+  if (deckTopEl) {
+    deckTopEl.style.setProperty("--i", "8");
+    deckTopEl.style.visibility = "hidden";
+    deckTopEl.style.opacity = "0";
+    deckTopEl.classList.remove("stack-enter");
+    deckTopEl.classList.add("stack-offscreen");
+    deckTopEl.style.transform =
       "translate(var(--stack-x), calc(var(--stack-y) - 120vh)) rotate(calc(var(--stack-rot) - 6deg))";
+  }
+
+  // NOW change display properties after everything is positioned offscreen
+  stackCards.forEach((card, index) => {
+    const visible = index < stackCount;
+    card.style.display = visible ? "block" : "none";
+  });
+  if (deckTopEl) {
+    deckTopEl.style.display = totalCards > 0 ? "block" : "none";
+  }
+  deckEl.style.display = "grid";
+
+  // Set animation delays
+  stackItems.forEach((item, index) => {
     item.style.animationDelay = `${index * 80}ms`;
     item.addEventListener(
       "animationend",
@@ -187,11 +205,15 @@ function playIntroStack() {
     );
   });
 
+  // Force reflow
   deckEl.getBoundingClientRect();
+
   requestAnimationFrame(() => {
     document.body.classList.remove("intro-playing");
     requestAnimationFrame(() => {
       stackItems.forEach((item) => {
+        item.style.visibility = "visible";
+        item.style.opacity = "1";
         item.classList.remove("stack-offscreen");
         item.classList.add("stack-enter");
         item.style.transform = "";
@@ -200,14 +222,7 @@ function playIntroStack() {
   });
 }
 
-const applyTraitorToggle = () => {
-  if (!traitorToggleEl) {
-    return;
-  }
-  traitorToggleEl.classList.toggle("off", !traitorEnabled);
-  localStorage.setItem("traitorEnabled", traitorEnabled ? "1" : "0");
-  resetGame();
-};
+
 
 const renderCounters = () => {
   if (!countersEl) {
@@ -277,16 +292,10 @@ const dealCard = (type, onStart) => {
     () => {
       card.classList.remove("deal");
       cardsArea.classList.remove("dealing");
-      if (traitorToggleEl) {
-        traitorToggleEl.classList.remove("behind");
-      }
     },
     { once: true }
   );
   cardsArea.classList.add("dealing");
-  if (traitorToggleEl) {
-    traitorToggleEl.classList.add("behind");
-  }
   requestAnimationFrame(() => {
     card.classList.add("deal");
     if (onStart) {
@@ -321,15 +330,7 @@ const drawCard = () => {
     return;
   }
 
-  if (cardType === "traitor") {
-    playSound(sounds.ricochet);
-    if (deck.length === 0) {
-      points = drawnCount;
-      inPlay = false;
-      lastBang = false;
-    }
-    return;
-  }
+
 
   if (cardType === "jam") {
     if (deck.length === 0) {
@@ -413,7 +414,7 @@ document.body.addEventListener("pointerup", (event) => {
 
 const enableDrag = (targetEl, onStart, onEnd) => {
   if (!targetEl) {
-    return () => {};
+    return () => { };
   }
   let startX = 0;
   let startY = 0;
@@ -537,26 +538,5 @@ deckEl.addEventListener("dblclick", (event) => {
   event.preventDefault();
 });
 
-if (traitorToggleEl) {
-  traitorToggleEl.addEventListener("pointerup", (event) => {
-    event.stopPropagation();
-  });
-  traitorToggleEl.addEventListener("dblclick", (event) => {
-    event.stopPropagation();
-  });
-  traitorToggleEl.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (!introReady && !introPlayed) {
-      return;
-    }
-    traitorEnabled = !traitorEnabled;
-    applyTraitorToggle();
-  });
-}
 
-const storedToggle = localStorage.getItem("traitorEnabled");
-if (storedToggle !== null) {
-  traitorEnabled = storedToggle === "1";
-}
-applyTraitorToggle();
 enableDeckDrag();

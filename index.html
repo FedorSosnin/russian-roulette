@@ -1,37 +1,37 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Russian Roulette Card Draw</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body class="intro-start">
-    <main class="table">
-      <section class="play-area">
-        <button class="traitor-toggle" id="traitor-toggle" aria-label="Toggle traitor card">
-          <img src="Assets/Icons/rr-traitor-icon.png" alt="Traitor card toggle" />
-        </button>
-        <div class="center-stack">
-          <div class="start-screen" id="start-screen" aria-label="Tap to start" role="button"></div>
-          <div class="deck" id="deck" role="button" aria-label="Draw a card">
-            <img class="deck-placeholder" src="Assets/Icons/rr-deck-placeholder.png" alt="" aria-hidden="true" />
-            <span class="stack-card" aria-hidden="true"></span>
-            <span class="stack-card" aria-hidden="true"></span>
-            <span class="stack-card" aria-hidden="true"></span>
-            <span class="stack-card" aria-hidden="true"></span>
-            <span class="stack-card" aria-hidden="true"></span>
-            <span class="stack-card" aria-hidden="true"></span>
-            <span class="stack-card" aria-hidden="true"></span>
-            <img id="deck-top" src="Assets/Cards/rr-card-back.jpg" alt="Card deck" draggable="false" />
-          </div>
-          <div class="cards-area" id="cards-area" aria-live="polite"></div>
-        </div>
-        <div class="counters" id="counters" aria-hidden="true"></div>
-      </section>
-      <div class="version-tag">v0.1</div>
-    </main>
 
-    <script src="script.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Russian Roulette Card Draw</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="intro-start">
+  <main class="table">
+    <section class="play-area">
+      <div class="center-stack">
+        <div class="start-screen" id="start-screen" aria-label="Tap to start" role="button"></div>
+        <div class="deck" id="deck" role="button" aria-label="Draw a card">
+          <img class="deck-placeholder" src="Assets/Icons/rr-deck-placeholder.png" alt="" aria-hidden="true" />
+          <span class="stack-card" aria-hidden="true"></span>
+          <span class="stack-card" aria-hidden="true"></span>
+          <span class="stack-card" aria-hidden="true"></span>
+          <span class="stack-card" aria-hidden="true"></span>
+          <span class="stack-card" aria-hidden="true"></span>
+          <span class="stack-card" aria-hidden="true"></span>
+          <span class="stack-card" aria-hidden="true"></span>
+          <img id="deck-top" src="Assets/Cards/rr-card-back.jpg" alt="Card deck" draggable="false" />
+        </div>
+        <div class="cards-area" id="cards-area" aria-live="polite"></div>
+      </div>
+      <div class="counters" id="counters" aria-hidden="true"></div>
+    </section>
+    <div class="version-tag">v0.2.1</div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+
 </html>
