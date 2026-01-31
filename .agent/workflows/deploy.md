@@ -11,36 +11,42 @@ This workflow will:
 
 ## Steps
 
-### 1. Check Git Status
+### 1. Increment Version
+// turbo
+```bash
+node .agent/scripts/increment_version.js
+```
+
+### 2. Check Git Status
 ```bash
 git status
 ```
 Review what files have changed before committing.
 
-### 2. Stage All Changes
+### 3. Stage All Changes
 // turbo
 ```bash
 git add .
 ```
 
-### 3. Commit Changes
+### 4. Commit Changes
 Ask the user for a commit message, then commit:
 ```bash
 git commit -m "[USER PROVIDED MESSAGE]"
 ```
 
-### 4. Push to GitHub
+### 5. Push to GitHub
 ```bash
 git push
 ```
 
-### 5. Recreate deploy.zip
+### 6. Recreate deploy.zip
 // turbo
 ```bash
 rm deploy.zip && zip -r deploy.zip index.html script.js styles.css Assets/
 ```
 
-### 6. Deploy to cPanel
+### 7. Deploy to cPanel
 Use the browser_subagent to:
 - Navigate to cPanel at: https://sv93.ifastnet.com:2083/
 - Login with credentials:
@@ -52,5 +58,5 @@ Use the browser_subagent to:
 cd public_html && git pull origin main && wget -O deploy.zip https://github.com/FedorSosnin/russian-roulette/raw/main/deploy.zip && unzip -o deploy.zip && rm deploy.zip
 ```
 
-### 7. Verify Deployment
+### 8. Verify Deployment
 Confirm that the files were successfully deployed by checking the FileManager or testing the live site.

@@ -236,6 +236,41 @@ body.intro-playing .start-screen {
   animation: stack-in 320ms ease-out forwards;
 }
 
+#deck-top {
+  transition: transform 1s ease;
+}
+
+#deck-top.stop-animation {
+  animation: none !important;
+}
+
+@keyframes deck-float {
+  0% {
+    transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot)) scale(1);
+  }
+
+  25% {
+    transform: translate(calc(var(--stack-x) + 1.7px), calc(var(--stack-y) - 4.5px)) rotate(calc(var(--stack-rot) + 0.6deg)) scale(1.015);
+  }
+
+  50% {
+    transform: translate(calc(var(--stack-x) - 1.1px), calc(var(--stack-y) - 2.2px)) rotate(calc(var(--stack-rot) - 0.3deg)) scale(1.005);
+  }
+
+  75% {
+    transform: translate(calc(var(--stack-x) + 0.6px), calc(var(--stack-y) - 5.5px)) rotate(calc(var(--stack-rot) + 0.3deg)) scale(1.025);
+  }
+
+  100% {
+    transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot)) scale(1);
+  }
+}
+
+#deck-top:not(.stack-enter):not(.dragging):not(.stack-offscreen) {
+  animation: deck-float 5.4s ease-in-out infinite;
+  will-change: transform;
+}
+
 .deck img.dragging {
   z-index: 11;
 }

@@ -62,6 +62,9 @@ const getTotalCards = () => 8;
 
 const resetGame = () => {
   deck = buildDeck();
+  if (deckTopEl) {
+    deckTopEl.classList.remove("stop-animation");
+  }
   drawnCount = 0;
   points = 0;
   inPlay = true;
@@ -131,7 +134,7 @@ const updateDeckStack = () => {
   if (deckTopEl) {
     deckTopEl.style.visibility = remaining > 0 ? "visible" : "hidden";
     deckTopEl.style.opacity = remaining > 0 ? "1" : "0";
-    deckTopEl.style.setProperty("--i", "8");
+    deckTopEl.style.setProperty("--i", `${Math.min(remaining, 8)}`);
   }
   const deckPlaceholder = deckEl.querySelector(".deck-placeholder");
   if (deckPlaceholder) {
@@ -266,7 +269,7 @@ const renderCounters = () => {
   }
 };
 
-const dealCard = (type, onStart) => {
+const dealCard = (type, onStart, fromPos) => {
   const card = createCardElement(type);
   const stackIndex = Math.max(0, drawnCount - 1);
   const totalCards = getTotalCards();
@@ -278,12 +281,23 @@ const dealCard = (type, onStart) => {
   card.style.setProperty("--to-y", `${offsetY}px`);
   cardsArea.appendChild(card);
 
-  const deckRect = (deckTopEl || deckEl).getBoundingClientRect();
-  const areaRect = cardsArea.getBoundingClientRect();
-  const cardWidth = card.offsetWidth;
-  const cardHeight = card.offsetHeight;
-  const fromX = deckRect.left + deckRect.width / 2 - (areaRect.left + cardWidth / 2);
-  const fromY = deckRect.top + deckRect.height / 2 - (areaRect.top + cardHeight / 2);
+  let fromX, fromY;
+
+  if (fromPos) {
+    const areaRect = cardsArea.getBoundingClientRect();
+    const cardWidth = card.offsetWidth;
+    const cardHeight = card.offsetHeight;
+    fromX = fromPos.x - (areaRect.left + cardWidth / 2);
+    fromY = fromPos.y - (areaRect.top + cardHeight / 2);
+  } else {
+    const deckRect = (deckTopEl || deckEl).getBoundingClientRect();
+    const areaRect = cardsArea.getBoundingClientRect();
+    const cardWidth = card.offsetWidth;
+    const cardHeight = card.offsetHeight;
+    fromX = deckRect.left + deckRect.width / 2 - (areaRect.left + cardWidth / 2);
+    fromY = deckRect.top + deckRect.height / 2 - (areaRect.top + cardHeight / 2);
+  }
+
   card.style.setProperty("--from-x", `${fromX}px`);
   card.style.setProperty("--from-y", `${fromY}px`);
   card.getBoundingClientRect();
@@ -306,7 +320,7 @@ const dealCard = (type, onStart) => {
   topDrawnCleanup = enableCardDrag(card, topDrawnCleanup);
 };
 
-const drawCard = () => {
+const drawCard = (fromPos) => {
   if (!inPlay || deck.length === 0) {
     return;
   }
@@ -315,12 +329,15 @@ const drawCard = () => {
   renderCounters();
   dealCard(cardType, () => {
     updateDeckStack();
-  });
+  }, fromPos);
   playSound(sounds.draw, { overlap: true });
 
   if (cardType === "bang") {
     inPlay = false;
     lastBang = true;
+    if (deckTopEl) {
+      deckTopEl.classList.add("stop-animation");
+    }
     const dots = countersEl ? countersEl.querySelectorAll(".counter-dot") : [];
     dots.forEach((dot, index) => {
       dot.style.animationDelay = `${index * 0.05}s`;
@@ -412,7 +429,7 @@ document.body.addEventListener("pointerup", (event) => {
   resetGame();
 });
 
-const enableDrag = (targetEl, onStart, onEnd) => {
+const enableDrag = (targetEl, onStart, onEnd, onMove) => {
   if (!targetEl) {
     return () => { };
   }
@@ -423,47 +440,57 @@ const enableDrag = (targetEl, onStart, onEnd) => {
   let dragging = false;
 
   const resetDrag = () => {
-    targetEl.style.transition = "transform 180ms ease";
+    targetEl.style.transition = "transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275)";
     targetEl.style.transform = "";
     setTimeout(() => {
       targetEl.style.transition = "";
-    }, 200);
+    }, 350);
   };
 
   const onPointerMove = (event) => {
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
-    const stepX = event.clientX - lastX;
-    const stepY = event.clientY - lastY;
-    if (!dragging && Math.hypot(dx, dy) > 4) {
+
+    if (!dragging && Math.hypot(dx, dy) > 8) {
       dragging = true;
       targetEl.style.transition = "none";
       if (onStart) {
         onStart();
       }
     }
+
     if (dragging) {
-      const tiltX = Math.max(-5, Math.min(5, stepY * -0.6));
-      const tiltZ = Math.max(-6, Math.min(6, stepX * 0.6));
-      targetEl.style.transform = `translate(${dx}px, ${dy}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
+      if (onMove) {
+        onMove(dx, dy, event.clientX, event.clientY);
+      } else {
+        const tiltX = Math.max(-5, Math.min(5, dy * -0.6));
+        const tiltZ = Math.max(-6, Math.min(6, dx * 0.6));
+        targetEl.style.transform = `translate(${dx}px, ${dy}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
+      }
     }
     lastX = event.clientX;
     lastY = event.clientY;
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (event) => {
     document.removeEventListener("pointermove", onPointerMove);
     document.removeEventListener("pointerup", onPointerUp);
     document.removeEventListener("pointercancel", onPointerUp);
+
     if (dragging) {
       if (onEnd) {
-        onEnd();
+        onEnd(event.clientX, event.clientY, event.clientX - startX, event.clientY - startY);
       }
-      resetDrag();
+      requestAnimationFrame(() => {
+        if (targetEl.isConnected) {
+          resetDrag();
+        }
+      });
     }
   };
 
   const onPointerDown = (event) => {
+    if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
     startX = event.clientX;
@@ -474,6 +501,9 @@ const enableDrag = (targetEl, onStart, onEnd) => {
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp);
     document.addEventListener("pointercancel", onPointerUp);
+    if (targetEl.hasPointerCapture(event.pointerId)) {
+      targetEl.releasePointerCapture(event.pointerId);
+    }
   };
 
   targetEl.addEventListener("pointerdown", onPointerDown);
@@ -524,10 +554,24 @@ const enableDeckDrag = () => {
       deckEl.classList.add("dragging");
       suppressNextTap = true;
     },
-    () => {
+    (endX, endY, totalDx, totalDy) => {
       suppressNextTap = true;
       deckTopEl.classList.remove("dragging");
       deckEl.classList.remove("dragging");
+
+      const threshold = 60;
+      if (totalDy > threshold) {
+        drawCard({ x: endX, y: endY });
+        deckTopEl.style.transition = "none";
+        deckTopEl.style.transform = "";
+      }
+    },
+    (dx, dy) => {
+      const dampingX = 0.8;
+      const dampingY = 1;
+      const tiltX = Math.max(-10, Math.min(10, dy * -0.1));
+      const tiltZ = Math.max(-10, Math.min(10, dx * 0.2));
+      deckTopEl.style.transform = `translate(${dx * dampingX}px, ${dy * dampingY}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
     }
   );
 };
