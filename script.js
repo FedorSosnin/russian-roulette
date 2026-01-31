@@ -279,16 +279,26 @@ const dealCard = (type, onStart, fromPos) => {
   card.style.setProperty("--tilt", `${tilt}deg`);
   card.style.setProperty("--to-x", `${offsetX}px`);
   card.style.setProperty("--to-y", `${offsetY}px`);
+
+  if (fromPos && fromPos.transform) {
+    card.style.setProperty("--from-x", `${fromPos.transform.x}px`);
+    card.style.setProperty("--from-y", `${fromPos.transform.y}px`);
+    card.style.setProperty("--from-tilt", fromPos.transform.rotate);
+    card.classList.add("custom-start");
+  }
+
   cardsArea.appendChild(card);
 
-  let fromX, fromY;
-
-  if (fromPos) {
+  if (fromPos && fromPos.transform) {
+    // Already set via CSS variables and custom-start class
+  } else if (fromPos) {
     const areaRect = cardsArea.getBoundingClientRect();
     const cardWidth = card.offsetWidth;
     const cardHeight = card.offsetHeight;
     fromX = fromPos.x - (areaRect.left + cardWidth / 2);
     fromY = fromPos.y - (areaRect.top + cardHeight / 2);
+    card.style.setProperty("--from-x", `${fromX}px`);
+    card.style.setProperty("--from-y", `${fromY}px`);
   } else {
     const deckRect = (deckTopEl || deckEl).getBoundingClientRect();
     const areaRect = cardsArea.getBoundingClientRect();
@@ -296,10 +306,10 @@ const dealCard = (type, onStart, fromPos) => {
     const cardHeight = card.offsetHeight;
     fromX = deckRect.left + deckRect.width / 2 - (areaRect.left + cardWidth / 2);
     fromY = deckRect.top + deckRect.height / 2 - (areaRect.top + cardHeight / 2);
+    card.style.setProperty("--from-x", `${fromX}px`);
+    card.style.setProperty("--from-y", `${fromY}px`);
   }
 
-  card.style.setProperty("--from-x", `${fromX}px`);
-  card.style.setProperty("--from-y", `${fromY}px`);
   card.getBoundingClientRect();
   card.addEventListener(
     "animationend",
@@ -435,23 +445,23 @@ const enableDrag = (targetEl, onStart, onEnd, onMove) => {
   }
   let startX = 0;
   let startY = 0;
-  let lastX = 0;
-  let lastY = 0;
   let dragging = false;
+  let baseMatrix = null;
 
   const resetDrag = () => {
-    targetEl.style.transition = "transform 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    targetEl.style.transition = "transform 400ms cubic-bezier(0.2, 1, 0.3, 1)";
     targetEl.style.transform = "";
+    targetEl.classList.remove("paused");
     setTimeout(() => {
       targetEl.style.transition = "";
-    }, 350);
+    }, 450);
   };
 
   const onPointerMove = (event) => {
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
 
-    if (!dragging && Math.hypot(dx, dy) > 8) {
+    if (!dragging && Math.hypot(dx, dy) > 5) {
       dragging = true;
       targetEl.style.transition = "none";
       if (onStart) {
@@ -461,15 +471,15 @@ const enableDrag = (targetEl, onStart, onEnd, onMove) => {
 
     if (dragging) {
       if (onMove) {
-        onMove(dx, dy, event.clientX, event.clientY);
+        onMove(dx, dy, event.clientX, event.clientY, baseMatrix);
       } else {
         const tiltX = Math.max(-5, Math.min(5, dy * -0.6));
         const tiltZ = Math.max(-6, Math.min(6, dx * 0.6));
-        targetEl.style.transform = `translate(${dx}px, ${dy}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
+        const offX = baseMatrix ? baseMatrix.m41 + dx : dx;
+        const offY = baseMatrix ? baseMatrix.m42 + dy : dy;
+        targetEl.style.transform = `translate(${offX}px, ${offY}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
       }
     }
-    lastX = event.clientX;
-    lastY = event.clientY;
   };
 
   const onPointerUp = (event) => {
@@ -493,11 +503,16 @@ const enableDrag = (targetEl, onStart, onEnd, onMove) => {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
+
+    const style = window.getComputedStyle(targetEl);
+    baseMatrix = new DOMMatrix(style.transform);
+    targetEl.style.transform = style.transform;
+    targetEl.classList.add("paused");
+
     startX = event.clientX;
     startY = event.clientY;
-    lastX = event.clientX;
-    lastY = event.clientY;
     dragging = false;
+
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp);
     document.addEventListener("pointercancel", onPointerUp);
@@ -561,17 +576,43 @@ const enableDeckDrag = () => {
 
       const threshold = 60;
       if (totalDy > threshold) {
-        drawCard({ x: endX, y: endY });
+        const style = window.getComputedStyle(deckTopEl);
+        const matrix = new DOMMatrix(style.transform);
+        const rotation = Math.atan2(matrix.b, matrix.a) * (180 / Math.PI);
+
+        // Adjust for cardsArea scale/position
+        const areaRect = cardsArea.getBoundingClientRect();
+        const deckRect = deckTopEl.getBoundingClientRect();
+        const cardWidth = deckTopEl.offsetWidth;
+        const cardHeight = deckTopEl.offsetHeight;
+
+        const relativeX = deckRect.left + deckRect.width / 2 - (areaRect.left + cardWidth / 2);
+        const relativeY = deckRect.top + deckRect.height / 2 - (areaRect.top + cardHeight / 2);
+
+        drawCard({
+          x: endX,
+          y: endY,
+          transform: {
+            x: relativeX,
+            y: relativeY,
+            rotate: `${rotation}deg`
+          }
+        });
         deckTopEl.style.transition = "none";
         deckTopEl.style.transform = "";
+        deckTopEl.classList.remove("paused");
       }
     },
-    (dx, dy) => {
-      const dampingX = 0.8;
+    (dx, dy, _clientX, _clientY, startMatrix) => {
+      const dampingX = 1;
       const dampingY = 1;
       const tiltX = Math.max(-10, Math.min(10, dy * -0.1));
       const tiltZ = Math.max(-10, Math.min(10, dx * 0.2));
-      deckTopEl.style.transform = `translate(${dx * dampingX}px, ${dy * dampingY}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
+
+      const offX = startMatrix ? startMatrix.m41 + dx * dampingX : dx * dampingX;
+      const offY = startMatrix ? startMatrix.m42 + dy * dampingY : dy * dampingY;
+
+      deckTopEl.style.transform = `translate(${offX}px, ${offY}px) rotateX(${tiltX}deg) rotate(${tiltZ}deg)`;
     }
   );
 };

@@ -266,9 +266,18 @@ body.intro-playing .start-screen {
   }
 }
 
-#deck-top:not(.stack-enter):not(.dragging):not(.stack-offscreen) {
+#deck-top:not(.stack-enter):not(.dragging):not(.stack-offscreen):not(.paused) {
   animation: deck-float 5.4s ease-in-out infinite;
   will-change: transform;
+}
+
+#deck-top.paused {
+  animation-play-state: paused !important;
+}
+
+#deck-top.paused,
+#deck-top.dragging {
+  transition: none !important;
 }
 
 .deck img.dragging {
@@ -364,6 +373,20 @@ body.intro-loading .deck * {
 @keyframes deal-move {
   from {
     transform: translate(var(--from-x), var(--from-y)) rotate(var(--tilt, 0deg));
+  }
+
+  to {
+    transform: translate(var(--to-x, 0px), var(--to-y, 0px)) rotate(var(--tilt, 0deg));
+  }
+}
+
+.card.deal.custom-start {
+  animation: deal-move-custom 420ms cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+@keyframes deal-move-custom {
+  from {
+    transform: translate(var(--from-x), var(--from-y)) rotate(var(--from-tilt, 0deg));
   }
 
   to {
