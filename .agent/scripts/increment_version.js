@@ -19,8 +19,13 @@ try {
 
         const newVersionTag = `class="version-tag">v${major}.${minor}.${patch}</div>`;
         content = content.replace(versionRegex, newVersionTag);
+
+        // Update cache busting strings
+        const cacheBusterRegex = /(\?v=)\d+\.\d+\.\d+/g;
+        content = content.replace(cacheBusterRegex, `$1${major}.${minor}.${patch}`);
+
         fs.writeFileSync(indexPath, content);
-        console.log(`Version incremented to v${major}.${minor}.${patch}`);
+        console.log(`Version incremented to v${major}.${minor}.${patch} (including cache busting)`);
     } else {
         console.error('Version tag not found in index.html');
         process.exit(1);
