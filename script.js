@@ -7,8 +7,13 @@ const sounds = {
   draw: new Audio("Assets/Sound/playing-card-flipped-over-epic-stock-media-1-00-00.mp3"),
   shuffle: new Audio("Assets/Sound/playing-cards-riffled.mp3"),
   bang: new Audio("Assets/Sound/gunshot-handgun-bosnow-2-2-00-02.mp3"),
+
   ricochet: new Audio("Assets/Sound/cartoon-gunshot-richochet-bosnow-3-3-00-01.mp3"),
 };
+
+const bgMusic = new Audio("Assets/Sound/background-music-1.mp3");
+bgMusic.loop = true;
+let bgFadeTimer = null;
 
 const cardImages = {
   click: "Assets/Cards/rr-click.jpg",
@@ -29,6 +34,37 @@ let topDrawnCard = null;
 let introPlayed = false;
 let pendingIntroSound = false;
 let introReady = false;
+
+const playBgMusic = () => {
+  if (bgFadeTimer) {
+    clearInterval(bgFadeTimer);
+    bgFadeTimer = null;
+  }
+  bgMusic.volume = 0;
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(() => {});
+  const fadeDuration = 1200;
+  const step = 50;
+  let elapsed = 0;
+  bgFadeTimer = setInterval(() => {
+    elapsed += step;
+    const t = Math.min(1, elapsed / fadeDuration);
+    bgMusic.volume = t * 0.6;
+    if (t >= 1) {
+      clearInterval(bgFadeTimer);
+      bgFadeTimer = null;
+    }
+  }, step);
+};
+
+const stopBgMusic = () => {
+  if (bgFadeTimer) {
+    clearInterval(bgFadeTimer);
+    bgFadeTimer = null;
+  }
+  bgMusic.pause();
+  bgMusic.currentTime = 0;
+};
 
 const playSound = (audio, options = {}) => {
   if (!audio) {
@@ -353,6 +389,7 @@ const drawCard = (fromPos) => {
       dot.style.animationDelay = `${index * 0.05}s`;
       dot.classList.add("fade-out");
     });
+    stopBgMusic();
     setTimeout(() => playSound(sounds.bang, { overlap: true }), 80);
     return;
   }
@@ -386,6 +423,7 @@ const handleDeckTap = () => {
   }
   if (!inPlay && lastBang) {
     resetGame();
+    playBgMusic();
     return;
   }
 
@@ -434,6 +472,7 @@ document.body.addEventListener("pointerup", (event) => {
   }
   event.stopPropagation();
   introReady = true;
+  playBgMusic();
   document.body.classList.add("intro-playing");
   document.body.classList.remove("intro-start");
   resetGame();
