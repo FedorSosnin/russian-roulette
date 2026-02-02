@@ -148,6 +148,21 @@ body.intro-playing .start-screen {
   display: none;
 }
 
+.deck.receiving {
+  z-index: 15;
+  animation: deck-receive 240ms ease-in-out infinite alternate;
+}
+
+@keyframes deck-receive {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.1) rotate(1deg) translateY(-5px);
+  }
+}
+
 .deck-placeholder {
   position: absolute;
   width: var(--card-width);
@@ -156,7 +171,7 @@ body.intro-playing .start-screen {
   left: 0;
   border-radius: 14px;
   object-fit: cover;
-  box-shadow: none;
+  box-shadow: none !important;
   transform: translateY(60px) rotate(-1.6deg);
   mix-blend-mode: soft-light;
   opacity: 0;
@@ -401,6 +416,36 @@ body.intro-loading .deck * {
 
   to {
     transform: rotateX(-180deg);
+  }
+}
+
+
+.card.return {
+  animation: deal-return 320ms cubic-bezier(0.5, 0, 0, 1) forwards;
+}
+
+.card.return .card-inner {
+  animation: flip-return 350ms ease forwards;
+}
+
+@keyframes deal-return {
+  from {
+    transform: translate(var(--to-x, 0px), var(--to-y, 0px)) rotate(var(--tilt, 0deg));
+  }
+
+  to {
+    transform: translate(var(--from-x), var(--from-y)) rotate(var(--from-tilt, 0deg)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes flip-return {
+  from {
+    transform: rotateX(-180deg);
+  }
+
+  to {
+    transform: rotateX(0deg);
   }
 }
 

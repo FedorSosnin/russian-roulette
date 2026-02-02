@@ -42,7 +42,7 @@ const playBgMusic = () => {
   }
   bgMusic.volume = 0;
   bgMusic.currentTime = 0;
-  bgMusic.play().catch(() => {});
+  bgMusic.play().catch(() => { });
   const fadeDuration = 1200;
   const step = 50;
   let elapsed = 0;
@@ -96,7 +96,7 @@ const buildDeck = () => {
 
 const getTotalCards = () => 8;
 
-const resetGame = () => {
+const resetGame = (options = {}) => {
   deck = buildDeck();
   if (deckTopEl) {
     deckTopEl.classList.remove("stop-animation");
@@ -120,9 +120,63 @@ const resetGame = () => {
     return;
   }
   updateDeckStack();
-  if (introReady || introPlayed) {
+  if ((introReady || introPlayed) && !options.silent) {
     playSound(sounds.shuffle);
   }
+};
+
+const animateReturnAndReset = () => {
+  if (drawnCount === 0) {
+    resetGame();
+    return;
+  }
+
+  if (topDrawnCleanup) {
+    topDrawnCleanup();
+    topDrawnCleanup = null;
+  }
+  topDrawnCard = null;
+
+  const cards = Array.from(cardsArea.children);
+  if (cards.length === 0) {
+    resetGame();
+    return;
+  }
+
+  playSound(sounds.shuffle);
+
+  if (deckEl) {
+    deckEl.classList.add("receiving");
+  }
+
+  // Calculate delay to sync with shuffle sound approx 1s
+  const totalDuration = 500;
+  const delayPerCard = Math.min(60, totalDuration / cards.length);
+
+  cards.forEach((card, index) => {
+    // Reverse index for visual effect (top cards go first?) or bottom first? 
+    // Usually top cards (last drawn) return first looks better for "rewind".
+    // But physically, maybe bottom first is easier? Let's do last drawn (top) first.
+    const reverseIndex = cards.length - 1 - index;
+
+    // We want the last drawn card (highest index) to go first.
+    // loops runs 0 to length-1.
+    // card at index length-1 should have 0 delay.
+    const delay = (cards.length - 1 - index) * delayPerCard;
+
+    card.style.animationDelay = `${delay}ms`;
+    const inner = card.querySelector(".card-inner");
+    if (inner) inner.style.animationDelay = `${delay}ms`;
+
+    card.classList.add("return");
+  });
+
+  setTimeout(() => {
+    if (deckEl) {
+      deckEl.classList.remove("receiving");
+    }
+    resetGame({ silent: true });
+  }, totalDuration + 50);
 };
 
 const stopRound = () => {
@@ -422,7 +476,7 @@ const handleDeckTap = () => {
     return;
   }
   if (!inPlay && lastBang) {
-    resetGame();
+    animateReturnAndReset();
     playBgMusic();
     return;
   }
@@ -432,12 +486,12 @@ const handleDeckTap = () => {
     tapTimeout = null;
     if (!inPlay) {
       if (!lastBang) {
-        resetGame();
+        animateReturnAndReset();
       }
       return;
     }
     stopRound();
-    resetGame();
+    animateReturnAndReset();
     return;
   }
 
@@ -522,9 +576,9 @@ const enableDrag = (targetEl, onStart, onEnd, onMove) => {
   };
 
   const onPointerUp = (event) => {
-    document.removeEventListener("pointermove", onPointerMove);
-    document.removeEventListener("pointerup", onPointerUp);
-    document.removeEventListener("pointercancel", onPointerUp);
+    document.removeEventListener("pointermove", onPointerMove, { capture: true });
+    document.removeEventListener("pointerup", onPointerUp, { capture: true });
+    document.removeEventListener("pointercancel", onPointerUp, { capture: true });
 
     if (dragging) {
       if (onEnd) {
@@ -552,9 +606,9 @@ const enableDrag = (targetEl, onStart, onEnd, onMove) => {
     startY = event.clientY;
     dragging = false;
 
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
-    document.addEventListener("pointercancel", onPointerUp);
+    document.addEventListener("pointermove", onPointerMove, { capture: true });
+    document.addEventListener("pointerup", onPointerUp, { capture: true });
+    document.addEventListener("pointercancel", onPointerUp, { capture: true });
     if (targetEl.hasPointerCapture(event.pointerId)) {
       targetEl.releasePointerCapture(event.pointerId);
     }
