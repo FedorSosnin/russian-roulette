@@ -2,6 +2,7 @@ const deckEl = document.getElementById("deck");
 const deckTopEl = document.getElementById("deck-top");
 const cardsArea = document.getElementById("cards-area");
 const countersEl = document.getElementById("counters");
+const flashOverlay = document.getElementById("flash-overlay");
 const stackCards = deckEl.querySelectorAll(".stack-card");
 const sounds = {
   draw: new Audio("Assets/Sound/playing-card-flipped-over-epic-stock-media-1-00-00.mp3"),
@@ -468,7 +469,14 @@ const drawCard = (fromPos) => {
       dot.classList.add("fade-out");
     });
     stopBgMusic();
-    setTimeout(() => playSound(sounds.bang, { overlap: true }), 80);
+    setTimeout(() => {
+      playSound(sounds.bang, { overlap: true });
+      if (flashOverlay) {
+        flashOverlay.classList.remove("flash-active");
+        void flashOverlay.offsetWidth; // Force reflow
+        flashOverlay.classList.add("flash-active");
+      }
+    }, 80);
     return;
   }
 
