@@ -518,7 +518,7 @@ body.intro-loading .deck * {
 .counter-dot {
   width: 78px;
   height: 78px;
-  background: url("Assets/Coins/coin.png") center/contain no-repeat;
+  background: url("Assets/Coins/Coin.png") center/contain no-repeat;
   box-shadow: none;
   transform: translateY(var(--coin-y, 0px)) rotate(var(--coin-rot, 0deg));
   transition: transform 160ms ease;
@@ -564,7 +564,7 @@ body.intro-loading .deck * {
 }
 
 .counters.dragging .counter-dot+.counter-dot {
-  margin-left: -52px !important;
+  margin-left: -66px !important;
   /* Overlap only subsequent coins */
 }
 

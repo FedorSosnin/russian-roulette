@@ -807,7 +807,7 @@ if (countersEl) {
     },
     (dx, dy, clientX, clientY) => { // Move
       const coinWidth = 78;
-      const stackOverlap = -52; // Matches CSS margin-left: -52px
+      const stackOverlap = -66; // Matches CSS margin-left: -66px
       const numCoins = countersEl.querySelectorAll('.counter-dot').length;
 
       // Calculate required transform to center the container (and thus the centered coins) under the cursor
