@@ -7,8 +7,13 @@ const sounds = {
   draw: new Audio("Assets/Sound/playing-card-flipped-over-epic-stock-media-1-00-00.mp3"),
   shuffle: new Audio("Assets/Sound/playing-cards-riffled.mp3"),
   bang: new Audio("Assets/Sound/gunshot-handgun-bosnow-2-2-00-02.mp3"),
-
   ricochet: new Audio("Assets/Sound/cartoon-gunshot-richochet-bosnow-3-3-00-01.mp3"),
+  coinDeal: [
+    new Audio("Assets/Sound/coin-deal.mp3"),
+    new Audio("Assets/Sound/coin-deal-2.mp3"),
+    new Audio("Assets/Sound/coin-deal-3.mp3"),
+  ],
+  coinDrag: new Audio("Assets/Sound/coin-dragged.mp3"),
 };
 
 const bgMusic = new Audio("Assets/Sound/background-music-1.mp3");
@@ -34,6 +39,7 @@ let topDrawnCard = null;
 let introPlayed = false;
 let pendingIntroSound = false;
 let introReady = false;
+let lastCoinSoundIdx = -1;
 
 const playBgMusic = () => {
   if (bgFadeTimer) {
@@ -76,6 +82,7 @@ const playSound = (audio, options = {}) => {
   target.play().catch(() => { });
 };
 
+
 const buildDeck = () => {
   const newDeck = [
     "click",
@@ -100,6 +107,8 @@ const resetGame = (options = {}) => {
   deck = buildDeck();
   if (deckTopEl) {
     deckTopEl.classList.remove("stop-animation");
+    const deckImg = deckTopEl.querySelector("img");
+    if (deckImg) deckImg.src = cardImages.back;
   }
   drawnCount = 0;
   points = 0;
@@ -321,10 +330,10 @@ const renderCounters = () => {
   if (!countersEl) {
     return;
   }
-  let container = countersEl.querySelector(".cube-row");
+  let container = countersEl.querySelector(".coin-row");
   if (!container) {
     container = document.createElement("div");
-    container.className = "cube-row";
+    container.className = "coin-row";
     countersEl.appendChild(container);
   }
 
@@ -339,19 +348,34 @@ const renderCounters = () => {
   for (let i = existing; i < targetCount; i += 1) {
     const dot = document.createElement("span");
     dot.className = "counter-dot active";
-    const tilt = (Math.random() * 18 - 9).toFixed(2);
+    const tilt = (Math.random() * 360).toFixed(2); // Full 360 degree rotation for coins
     const offsetY = (Math.random() * 12 - 6).toFixed(1);
-    dot.style.setProperty("--cube-rot", `${tilt}deg`);
-    dot.style.setProperty("--cube-y", `${offsetY}px`);
-    dot.classList.add("cube-enter");
+    dot.style.setProperty("--coin-rot", `${tilt}deg`);
+    dot.style.setProperty("--coin-y", `${offsetY}px`);
+    dot.classList.add("coin-enter");
     dot.addEventListener(
       "animationend",
       () => {
-        dot.classList.remove("cube-enter");
+        dot.classList.remove("coin-enter");
       },
       { once: true }
     );
-    container.appendChild(dot);
+    // Alternate between left (prepend) and right (append)
+    if (container.children.length % 2 === 0) {
+      container.appendChild(dot);
+    } else {
+      container.prepend(dot);
+    }
+
+    // Play random coin sound, not repeating the last one
+    const coinSounds = sounds.coinDeal;
+    let nextIdx;
+    do {
+      nextIdx = Math.floor(Math.random() * coinSounds.length);
+    } while (nextIdx === lastCoinSoundIdx);
+
+    lastCoinSoundIdx = nextIdx;
+    playSound(coinSounds[nextIdx], { overlap: true });
   }
 
   if (drawnCount === 0) {
@@ -520,16 +544,42 @@ document.addEventListener(
   { once: true }
 );
 
-document.body.addEventListener("pointerup", (event) => {
+const startGame = () => {
+  // Use a flag to prevent multiple triggers
+  if (introReady) return;
+
   if (!document.body.classList.contains("intro-start")) {
-    return;
+    // If we're already playing or intro is over, don't restart here
+    if (document.body.classList.contains("intro-playing") || introPlayed) return;
   }
-  event.stopPropagation();
+
   introReady = true;
+  console.log("Game Starting...");
+
   playBgMusic();
   document.body.classList.add("intro-playing");
   document.body.classList.remove("intro-start");
   resetGame();
+};
+
+const startScreenEl = document.getElementById("start-screen");
+if (startScreenEl) {
+  // Use both pointerup and click for maximum compatibility
+  startScreenEl.addEventListener("pointerup", (event) => {
+    event.stopPropagation();
+    startGame();
+  });
+  startScreenEl.addEventListener("click", (event) => {
+    event.stopPropagation();
+    startGame();
+  });
+}
+
+// Global fallback for starting the game
+document.addEventListener("pointerup", (event) => {
+  if (document.body.classList.contains("intro-start")) {
+    startGame();
+  }
 });
 
 const enableDrag = (targetEl, onStart, onEnd, onMove) => {
@@ -558,7 +608,7 @@ const enableDrag = (targetEl, onStart, onEnd, onMove) => {
       dragging = true;
       targetEl.style.transition = "none";
       if (onStart) {
-        onStart();
+        onStart(startX, startY);
       }
     }
 
@@ -718,3 +768,54 @@ deckEl.addEventListener("dblclick", (event) => {
 
 
 enableDeckDrag();
+
+// Initialize deck image (deckTopEl is now a wrapper div)
+if (deckTopEl) {
+  const deckImg = deckTopEl.querySelector("img");
+  if (deckImg) {
+    deckImg.src = cardImages.back;
+  }
+  // Ensure visibility properties are matched
+  deckTopEl.style.visibility = deck.length > 0 || !introPlayed ? "visible" : "hidden";
+}
+
+// Initialize counter drag (must be after enableDrag is defined)
+if (countersEl) {
+  let isDraggingCounters = false;
+  let layoutX = 0;
+  let layoutY = 0;
+
+  enableDrag(countersEl,
+    (startX, startY) => { // Start
+      isDraggingCounters = true;
+      countersEl.classList.add("dragging");
+      playSound(sounds.coinDrag, { overlap: true });
+
+      // Measure current layout position without the transform influence
+      const currentTransform = countersEl.style.transform;
+      countersEl.style.transform = "none";
+      const rect = countersEl.getBoundingClientRect();
+      layoutX = rect.left;
+      layoutY = rect.top;
+      countersEl.style.transform = currentTransform;
+    },
+    () => { // End
+      countersEl.classList.remove("dragging");
+      setTimeout(() => {
+        isDraggingCounters = false;
+      }, 50);
+    },
+    (dx, dy, clientX, clientY) => { // Move
+      const coinWidth = 78;
+      const stackOverlap = -52; // Matches CSS margin-left: -52px
+      const numCoins = countersEl.querySelectorAll('.counter-dot').length;
+
+      // Calculate required transform to center the container (and thus the centered coins) under the cursor
+      const containerWidth = countersEl.offsetWidth;
+      const offX = clientX - layoutX - (containerWidth / 2);
+      const offY = clientY - layoutY - 55; // Lifted higher so it's visible above the finger/cursor
+
+      countersEl.style.transform = `translate(${offX}px, ${offY}px)`;
+    }
+  );
+}

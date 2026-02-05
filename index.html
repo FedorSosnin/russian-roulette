@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Russian Roulette Card Draw</title>
-  <link rel="stylesheet" href="styles.css?v=0.2.6" />
+  <link rel="stylesheet" href="styles.css?v=0.2.7" />
 </head>
 
 <body class="intro-start">
@@ -22,16 +22,18 @@
           <span class="stack-card" aria-hidden="true"></span>
           <span class="stack-card" aria-hidden="true"></span>
           <span class="stack-card" aria-hidden="true"></span>
-          <img id="deck-top" src="Assets/Cards/rr-card-back.jpg" alt="Card deck" draggable="false" />
+          <div id="deck-top" class="deck-top-wrapper">
+            <img src="Assets/Cards/rr-card-back.jpg" alt="Card deck" draggable="false" />
+          </div>
         </div>
         <div class="cards-area" id="cards-area" aria-live="polite"></div>
       </div>
       <div class="counters" id="counters" aria-hidden="true"></div>
     </section>
-    <div class="version-tag">v0.2.6</div>
+    <div class="version-tag">v0.2.7</div>
   </main>
 
-  <script src="script.js?v=0.2.6"></script>
+  <script src="script.js?v=0.2.7"></script>
 </body>
 
 </html>
