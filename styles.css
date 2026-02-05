@@ -44,40 +44,12 @@ body.intro-start .deck {
   pointer-events: none;
 }
 
-.flash-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  background-color: transparent;
-}
-
-.flash-active {
-  animation: flash-white-red 300ms ease-out;
-}
-
-@keyframes flash-white-red {
-  0% {
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-  20% {
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-  50% {
-    background-color: rgba(255, 0, 0, 0.6);
-  }
-
-  100% {
-    background-color: transparent;
-  }
-}
-
 body.intro-playing .deck {
   display: grid;
-  visibility: hidden;
+  visibility: visible;
   pointer-events: none;
+  z-index: 7;
+  /* Ensure deck appears above start-screen */
 }
 
 .start-screen {
@@ -103,8 +75,9 @@ body.intro-start .start-screen {
 }
 
 body.intro-playing .start-screen {
-  opacity: 0.6;
+  opacity: 0;
   pointer-events: none;
+  visibility: hidden;
 }
 
 .table {
@@ -169,13 +142,12 @@ body.intro-playing .start-screen {
   background-size: cover;
   background-position: center;
   box-shadow:
-    0 16px 18px rgba(0, 0, 0, 0.32),
-    0 8px 10px rgba(0, 0, 0, 0.2);
-  --stack-x: calc(var(--stack-offset) * var(--i, 1));
-  --stack-y: calc(var(--stack-offset) * var(--i, 1));
+    0 10px 14px rgba(0, 0, 0, 0.22),
+    0 4px 6px rgba(0, 0, 0, 0.15);
+  --stack-x: 0;
+  --stack-y: 0;
   --stack-rot: var(--rot, -1.6deg);
   transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot));
-  z-index: 1;
   display: none;
 }
 
@@ -217,10 +189,7 @@ body.intro-playing .start-screen {
   opacity: 0.6;
 }
 
-.stack-enter {
-  animation: stack-in 320ms ease-out forwards;
-  animation-fill-mode: both;
-}
+
 
 .deck .stack-card:nth-child(1) {
   --i: 1;
@@ -262,13 +231,12 @@ body.intro-playing .start-screen {
   height: 100%;
   border-radius: 14px;
   box-shadow:
-    0 20px 24px rgba(0, 0, 0, 0.35),
-    0 10px 14px rgba(0, 0, 0, 0.25);
+    0 12px 18px rgba(0, 0, 0, 0.25),
+    0 6px 10px rgba(0, 0, 0, 0.15);
   object-fit: cover;
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 2;
   transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease;
   transform-origin: center;
   -webkit-user-drag: none;
@@ -280,12 +248,11 @@ body.intro-playing .start-screen {
   height: var(--card-height);
   position: relative;
   /* Start at default stack position */
-  --stack-x: calc(var(--stack-offset) * 8);
-  --stack-y: calc(var(--stack-offset) * 8);
+  --stack-x: 0;
+  --stack-y: 0;
   --stack-rot: -1.6deg;
   transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot));
   transform-origin: center;
-  z-index: 2;
   transition: transform 1s ease;
   pointer-events: auto;
   visibility: hidden;
@@ -298,10 +265,7 @@ body.intro-playing .start-screen {
   opacity: 1 !important;
 }
 
-body.intro-playing #deck-top {
-  visibility: visible;
-  opacity: 1;
-}
+
 
 #deck-top.stop-animation {
   animation: none !important;
@@ -312,8 +276,8 @@ body.intro-playing #deck-top {
 #deck-top.dragging img {
   transform: scale(1.04);
   box-shadow:
-    0 30px 42px rgba(0, 0, 0, 0.5),
-    0 16px 24px rgba(0, 0, 0, 0.35);
+    0 22px 32px rgba(0, 0, 0, 0.35),
+    0 10px 18px rgba(0, 0, 0, 0.25);
   cursor: grab;
 }
 
@@ -322,29 +286,19 @@ body.intro-playing #deck-top {
 }
 
 @keyframes deck-float {
-  0% {
-    transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot));
-  }
 
-  25% {
-    transform: translate(calc(var(--stack-x) + 1.7px), calc(var(--stack-y) - 4.5px)) rotate(calc(var(--stack-rot) + 0.6deg));
+  0%,
+  100% {
+    transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot)) scale(1);
   }
 
   50% {
-    transform: translate(calc(var(--stack-x) - 1.1px), calc(var(--stack-y) - 2.2px)) rotate(calc(var(--stack-rot) - 0.3deg));
-  }
-
-  75% {
-    transform: translate(calc(var(--stack-x) + 0.6px), calc(var(--stack-y) - 5.5px)) rotate(calc(var(--stack-rot) + 0.3deg));
-  }
-
-  100% {
-    transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot));
+    transform: translate(calc(var(--stack-x) + 1px), calc(var(--stack-y) - 6px)) rotate(calc(var(--stack-rot) + 0.8deg)) scale(1.015);
   }
 }
 
 #deck-top:not(.stack-enter):not(.dragging):not(.stack-offscreen):not(.paused) {
-  animation: deck-float 5.4s ease-in-out infinite;
+  animation: deck-float 3.2s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -368,7 +322,7 @@ body.intro-loading .deck * {
 }
 
 .stack-offscreen {
-  transform: translate(var(--stack-x), calc(var(--stack-y) - 120vh)) rotate(calc(var(--stack-rot) - 6deg));
+  transform: translate(var(--stack-x), calc(var(--stack-y) - 130vh)) rotate(calc(var(--stack-rot) + 6deg));
 }
 
 .deck.disabled {
@@ -386,7 +340,7 @@ body.intro-loading .deck * {
 }
 
 .cards-area.dealing {
-  z-index: 12;
+  z-index: 15;
 }
 
 .cards-area.dragging {
@@ -407,7 +361,7 @@ body.intro-loading .deck * {
 
 .card.deal {
   animation: deal-move 380ms ease-out;
-  z-index: 8;
+  z-index: 10;
 }
 
 .card.dragging {
@@ -427,8 +381,8 @@ body.intro-loading .deck * {
   backface-visibility: hidden;
   border-radius: 16px;
   box-shadow:
-    0 22px 28px rgba(0, 0, 0, 0.35),
-    0 10px 14px rgba(0, 0, 0, 0.25);
+    0 14px 20px rgba(0, 0, 0, 0.22),
+    0 6px 10px rgba(0, 0, 0, 0.15);
   overflow: hidden;
 }
 
@@ -473,12 +427,43 @@ body.intro-loading .deck * {
 }
 
 @keyframes flip {
-  from {
-    transform: rotateX(0deg);
-  }
-
   to {
     transform: rotateX(-180deg);
+  }
+}
+
+.card.bang-impact {
+  animation: card-bang-shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  z-index: 100 !important;
+}
+
+@keyframes card-bang-shake {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  15% {
+    transform: translate(-4px, -2px) rotate(-1.5deg) scale(1.2);
+  }
+
+  30% {
+    transform: translate(5px, 3px) rotate(2deg) scale(1.35);
+  }
+
+  45% {
+    transform: translate(-6px, -1px) rotate(-2.5deg) scale(1.4);
+  }
+
+  60% {
+    transform: translate(5px, 2px) rotate(1.5deg) scale(1.3);
+  }
+
+  75% {
+    transform: translate(-3px, -1px) rotate(-1deg) scale(1.15);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
   }
 }
 
@@ -512,14 +497,8 @@ body.intro-loading .deck * {
   }
 }
 
-@keyframes stack-in {
-  from {
-    transform: translate(var(--stack-x), calc(var(--stack-y) - 100vh)) rotate(calc(var(--stack-rot) - 6deg));
-  }
-
-  to {
-    transform: translate(var(--stack-x), var(--stack-y)) rotate(var(--stack-rot));
-  }
+.stack-enter {
+  /* No longer using animation, using transition instead */
 }
 
 .counters {

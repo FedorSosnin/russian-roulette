@@ -2,7 +2,6 @@ const deckEl = document.getElementById("deck");
 const deckTopEl = document.getElementById("deck-top");
 const cardsArea = document.getElementById("cards-area");
 const countersEl = document.getElementById("counters");
-const flashOverlay = document.getElementById("flash-overlay");
 const stackCards = deckEl.querySelectorAll(".stack-card");
 const sounds = {
   draw: new Audio("Assets/Sound/playing-card-flipped-over-epic-stock-media-1-00-00.mp3"),
@@ -129,6 +128,11 @@ const resetGame = (options = {}) => {
     playSound(sounds.shuffle);
     return;
   }
+  // Make sure deck-top is visible before calling updateDeckStack() for regular gameplay
+  if (deckTopEl) {
+    deckTopEl.style.visibility = "visible";
+    deckTopEl.style.opacity = "1";
+  }
   updateDeckStack();
   if ((introReady || introPlayed) && !options.silent) {
     playSound(sounds.shuffle);
@@ -232,8 +236,14 @@ const updateDeckStack = () => {
   });
   const remaining = deck.length;
   if (deckTopEl) {
-    deckTopEl.style.visibility = remaining > 0 ? "visible" : "hidden";
-    deckTopEl.style.opacity = remaining > 0 ? "1" : "0";
+    // Don't set visibility/opacity if we're still in the intro phase
+    if (!introPlayed) {
+      deckTopEl.style.visibility = "hidden";
+      deckTopEl.style.opacity = "0";
+    } else {
+      deckTopEl.style.visibility = remaining > 0 ? "visible" : "hidden";
+      deckTopEl.style.opacity = remaining > 0 ? "1" : "0";
+    }
     deckTopEl.style.setProperty("--i", `${Math.min(remaining, 8)}`);
   }
   const deckPlaceholder = deckEl.querySelector(".deck-placeholder");
@@ -260,69 +270,46 @@ function playIntroStack() {
     deckTopEl,
   ].filter(Boolean);
 
-  // Set up ALL transforms and visibility BEFORE changing display properties
-  stackCards.forEach((card, index) => {
-    const visible = index < stackCount;
-    card.style.setProperty("--i", `${index + 1}`);
-    if (visible) {
-      card.style.visibility = "hidden";
-      card.style.opacity = "0";
-      card.classList.remove("stack-enter");
-      card.classList.add("stack-offscreen");
-      card.style.transform =
-        "translate(var(--stack-x), calc(var(--stack-y) - 120vh)) rotate(calc(var(--stack-rot) - 6deg))";
-    }
+  console.log("Total stack items to animate:", stackItems.length);
+
+  // Reverse the array so that first items are animated first and appear at the bottom
+  const reversedStackItems = [...stackItems].reverse();
+
+  // Set items to offscreen position with inline styles
+  reversedStackItems.forEach((item, index) => {
+    const originalIndex = stackItems.indexOf(item);
+    item.style.setProperty("--i", `${originalIndex + 1}`);
+    item.style.display = "block";
+    item.style.visibility = "visible";
+    item.style.opacity = "1";
+    item.style.transform = "translateY(-1000px) rotate(6deg)"; // Fixed pixel offset for more reliable animation
+    item.style.zIndex = `${originalIndex + 1}`; // Set z-index to ensure proper stacking
+    console.log("Prepared item", originalIndex, "for animation");
   });
 
-  if (deckTopEl) {
-    deckTopEl.style.setProperty("--i", "8");
-    deckTopEl.style.visibility = "hidden";
-    deckTopEl.style.opacity = "0";
-    deckTopEl.classList.remove("stack-enter");
-    deckTopEl.classList.add("stack-offscreen");
-    deckTopEl.style.transform =
-      "translate(var(--stack-x), calc(var(--stack-y) - 120vh)) rotate(calc(var(--stack-rot) - 6deg))";
-  }
-
-  // NOW change display properties after everything is positioned offscreen
-  stackCards.forEach((card, index) => {
-    const visible = index < stackCount;
-    card.style.display = visible ? "block" : "none";
-  });
-  if (deckTopEl) {
-    deckTopEl.style.display = totalCards > 0 ? "block" : "none";
-  }
+  // Show deck container
   deckEl.style.display = "grid";
-
-  // Set animation delays
-  stackItems.forEach((item, index) => {
-    item.style.animationDelay = `${index * 80}ms`;
-    item.addEventListener(
-      "animationend",
-      () => {
-        item.classList.remove("stack-enter");
-        item.style.animationDelay = "";
-        item.style.transform = "";
-      },
-      { once: true }
-    );
-  });
 
   // Force reflow
   deckEl.getBoundingClientRect();
 
-  requestAnimationFrame(() => {
-    document.body.classList.remove("intro-playing");
-    requestAnimationFrame(() => {
-      stackItems.forEach((item) => {
-        item.style.visibility = "visible";
-        item.style.opacity = "1";
-        item.classList.remove("stack-offscreen");
-        item.classList.add("stack-enter");
-        item.style.transform = "";
-      });
-    });
+  // Trigger animation
+  reversedStackItems.forEach((item, index) => {
+    // Use setTimeout for staggered animation
+    setTimeout(() => {
+      item.style.transition = "all 1000ms cubic-bezier(0.2, 0.8, 0.2, 1)"; // Even longer duration
+      const originalIndex = stackItems.indexOf(item);
+      item.style.transform = `translateY(${originalIndex * 3}px) rotate(-1.6deg)`; // Fixed stack offset and rotation
+      // Debug info
+      console.log("Transition applied to item", originalIndex, item.style.transition);
+      console.log("Transform applied to item", originalIndex, item.style.transform);
+    }, index * 150); // Even larger delay between cards for better staggered effect
   });
+
+  // Remove intro class
+  setTimeout(() => {
+    document.body.classList.remove("intro-playing");
+  }, 100);
 }
 
 
@@ -388,8 +375,8 @@ const dealCard = (type, onStart, fromPos) => {
   const card = createCardElement(type);
   const stackIndex = Math.max(0, drawnCount - 1);
   const totalCards = getTotalCards();
-  const offsetX = Math.min(stackIndex, totalCards) * 6;
-  const offsetY = Math.min(stackIndex, totalCards) * 5;
+  const offsetX = 0;
+  const offsetY = 0;
   const tilt = (Math.random() * 6 - 3).toFixed(2);
   card.style.setProperty("--tilt", `${tilt}deg`);
   card.style.setProperty("--to-x", `${offsetX}px`);
@@ -471,10 +458,10 @@ const drawCard = (fromPos) => {
     stopBgMusic();
     setTimeout(() => {
       playSound(sounds.bang, { overlap: true });
-      if (flashOverlay) {
-        flashOverlay.classList.remove("flash-active");
-        void flashOverlay.offsetWidth; // Force reflow
-        flashOverlay.classList.add("flash-active");
+      if (topDrawnCard) {
+        topDrawnCard.classList.remove("bang-impact");
+        void topDrawnCard.offsetWidth; // Force reflow
+        topDrawnCard.classList.add("bang-impact");
       }
     }, 80);
     return;
@@ -784,7 +771,7 @@ if (deckTopEl) {
     deckImg.src = cardImages.back;
   }
   // Ensure visibility properties are matched
-  deckTopEl.style.visibility = deck.length > 0 || !introPlayed ? "visible" : "hidden";
+  deckTopEl.style.visibility = "hidden";
 }
 
 // Initialize counter drag (must be after enableDrag is defined)
