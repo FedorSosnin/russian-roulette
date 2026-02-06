@@ -7,7 +7,7 @@
   --accent: #d8c4a5;
   --card-width: clamp(240px, 56vw, 480px);
   --card-height: calc(var(--card-width) * 0.7);
-  --stack-offset: 3px;
+  --stack-offset: 4px;
   --placeholder-offset: 60px;
   --coin-img: url("Assets/Cubes/rr-cube-red.png");
 }
@@ -193,37 +193,37 @@ body.intro-playing .start-screen {
 
 .deck .stack-card:nth-child(1) {
   --i: 1;
-  --rot: -1.8deg;
+  --rot: -2.2deg;
 }
 
 .deck .stack-card:nth-child(2) {
   --i: 2;
-  --rot: 1.4deg;
+  --rot: 1.8deg;
 }
 
 .deck .stack-card:nth-child(3) {
   --i: 3;
-  --rot: -1.0deg;
+  --rot: -1.5deg;
 }
 
 .deck .stack-card:nth-child(4) {
   --i: 4;
-  --rot: 1.6deg;
+  --rot: 2.0deg;
 }
 
 .deck .stack-card:nth-child(5) {
   --i: 5;
-  --rot: -1.4deg;
+  --rot: -2.5deg;
 }
 
 .deck .stack-card:nth-child(6) {
   --i: 6;
-  --rot: 0.8deg;
+  --rot: 1.2deg;
 }
 
 .deck .stack-card:nth-child(7) {
   --i: 7;
-  --rot: -1.2deg;
+  --rot: -1.8deg;
 }
 
 .deck img {
@@ -272,7 +272,7 @@ body.intro-playing .start-screen {
 }
 
 /* Hover & Drag Effects */
-#deck-top:hover img,
+#deck-top:not(.no-hover):hover img,
 #deck-top.dragging img {
   transform: scale(1.04);
   box-shadow:

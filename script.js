@@ -264,6 +264,9 @@ function playIntroStack() {
   const totalCards = getTotalCards();
   const stackCount = Math.max(0, Math.min(stackCards.length, totalCards - 1));
 
+  // Disable hover effects during intro animation
+  deckTopEl.classList.add("no-hover");
+
   // Prepare stack items array first
   const stackItems = [
     ...Array.from(stackCards).slice(0, stackCount),
@@ -299,16 +302,21 @@ function playIntroStack() {
     setTimeout(() => {
       item.style.transition = "all 1000ms cubic-bezier(0.2, 0.8, 0.2, 1)"; // Even longer duration
       const originalIndex = stackItems.indexOf(item);
-      item.style.transform = `translateY(${originalIndex * 3}px) rotate(-1.6deg)`; // Fixed stack offset and rotation
+      // Use the individual rotation value based on the card's index
+      const rotations = [-2.2, 1.8, -1.5, 2.0, -2.5, 1.2, -1.8, 1.5];
+      const rotation = rotations[originalIndex] || -1.6;
+      item.style.transform = `translateY(${originalIndex * 4}px) rotate(${rotation}deg)`; // Fixed stack offset and rotation
       // Debug info
       console.log("Transition applied to item", originalIndex, item.style.transition);
       console.log("Transform applied to item", originalIndex, item.style.transform);
     }, index * 150); // Even larger delay between cards for better staggered effect
   });
 
-  // Remove intro class
+  // Remove intro class and re-enable hover effects after animation completes
+  const animationDuration = 1000 + (stackItems.length * 150) + 100;
   setTimeout(() => {
     document.body.classList.remove("intro-playing");
+    deckTopEl.classList.remove("no-hover");
   }, 100);
 }
 
