@@ -48,6 +48,10 @@ body.intro-playing .deck {
   display: grid;
   visibility: visible;
   pointer-events: none;
+}
+
+body.intro-playing #deck-top {
+  pointer-events: none !important;
   z-index: 7;
   /* Ensure deck appears above start-screen */
 }
