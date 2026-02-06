@@ -317,7 +317,7 @@ function playIntroStack() {
   setTimeout(() => {
     document.body.classList.remove("intro-playing");
     deckTopEl.classList.remove("no-hover");
-  }, 100);
+  }, animationDuration);
 }
 
 
